@@ -8,23 +8,40 @@ branch. It does not execute the repository being scanned.
 **27 core rules: 21 private helpers and 6 reporting rules.** The optional security
 markings profile brings the total to 33. All form-specific rules have been removed.
 
-## Release this action
+## Releases
 
-The repository is live at [KingBain/sensitivity-scan](https://github.com/KingBain/sensitivity-scan).
-Check that the **Test scanner** workflow passes on `main`, then tag the reviewed
-commit to make the action reusable by version:
+The [Test scanner workflow](.github/workflows/ci.yml) runs on pull requests and
+on pushes to `main`. After a successful `main` run, the
+[Release Please workflow](.github/workflows/release-please.yml) checks that CI
+tested the latest `main` commit. Release Please then opens or updates a
+release pull request with `CHANGELOG.md`, `version.txt` and the release
+manifest. Review and merge that pull request; the next successful `main` CI
+run creates the GitHub Release and its immutable `vMAJOR.MINOR.PATCH` tag.
+The workflow then creates or advances the `vMAJOR` tag used by consumers.
 
-```bash
-git checkout main
-git pull --ff-only
-git tag v1.0.0
-git tag v1
-git push origin v1.0.0 v1
-```
+The first release is configured as `v1.0.0`. `version.txt` starts at `0.0.0`
+until the first release pull request is merged. Scanner JSON and SARIF version
+fields read this file, so later releases report the current version.
 
-For subsequent releases, create a new version tag and move the `v1` major
-version tag to that release. Consumers can pin the full release commit SHA
-instead if they require an immutable reference.
+Before merging this setup, add the repository Actions secret
+`RELEASE_PLEASE_TOKEN`: a fine-grained personal access token scoped to this
+repository with **Contents**, **Pull requests** and **Issues** set to
+read/write. This lets the generated release pull request run the ordinary
+CI checks. The release workflow fails with a clear message when the secret is
+missing. The built-in `GITHUB_TOKEN` cannot trigger CI for a pull request it
+creates. An installation token from a GitHub App can also be used if you
+adapt the workflow to mint it during the run.
+
+Use Conventional Commit titles for changes to the action:
+`feat: ...` proposes a minor version, `fix: ...` a patch version, and a
+breaking change proposes a major version. The initial release uses
+`initial-version: 1.0.0`; subsequent version bumps come from these commits.
+A `docs:` or `chore:` change alone does not open a new release pull request.
+The versioned tag stays fixed; the moving major tag (`v1`) points at the
+latest 1.x release.
+
+See [Release Please's action guide](https://github.com/googleapis/release-please-action)
+for the release PR process.
 
 ## Use it in another repository
 

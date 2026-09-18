@@ -222,6 +222,8 @@ class GitTest(unittest.TestCase):
             self.assertNotIn('Jane Example', text)
             self.assertNotIn('_signature', text)
         sarif = json.loads((out/'findings.sarif').read_text())
+        self.assertEqual(report['version'], (scan.ROOT/'version.txt').read_text().strip())
+        self.assertEqual(sarif['runs'][0]['tool']['driver']['version'], report['version'])
         result = sarif['runs'][0]['results'][0]
         self.assertEqual(result['locations'][0]['physicalLocation']['region']['startLine'], 2)
         self.assertIn('%23',result['locations'][0]['physicalLocation']['artifactLocation']['uri'])
