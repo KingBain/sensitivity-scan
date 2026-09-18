@@ -229,7 +229,7 @@ class GitTest(unittest.TestCase):
     def test_cli_exit_codes_and_failed_report(self):
         self.write('sample.txt', 'SIN: 123456789\nName: Jane Example')
         self.save()
-        args = ['--repo', str(self.repo), '--output', str(self.root/'output')]
+        args = ['--repo', str(self.repo), '--mode', 'full', '--output', str(self.root/'output')]
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(scan.main(args), 0)
             self.assertEqual(scan.main(args+['--fail-on','HIGH']), 1)
