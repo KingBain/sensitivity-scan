@@ -8,41 +8,29 @@ branch. It does not execute the repository being scanned.
 **27 core rules: 21 private helpers and 6 reporting rules.** The optional security
 markings profile brings the total to 33. All form-specific rules have been removed.
 
-## Create your action repository
+## Release this action
 
-1. Extract this ZIP. `action.yml`, `README.md`, and the `rules` directory belong
-   at the root of the new repository.
-2. Create an empty GitHub repository, for example `generic-sensitive-scan`.
-3. From the extracted directory, run the following with your repository URL:
+The repository is live at [KingBain/sensitivity-scan](https://github.com/KingBain/sensitivity-scan).
+Check that the **Test scanner** workflow passes on `main`, then tag the reviewed
+commit to make the action reusable by version:
 
-   ```bash
-   git init -b main
-   git add .
-   git commit -m "Initial generic sensitive information scanner"
-   git remote add origin https://github.com/YOUR_ORG/generic-sensitive-scan.git
-   git push -u origin main
-   ```
+```bash
+git checkout main
+git pull --ff-only
+git tag v1.0.0
+git tag v1
+git push origin v1.0.0 v1
+```
 
-4. Check that the included **Test scanner** workflow passes. It runs the rule
-   and Git integration tests, checks rule generation, and smoke-tests the action.
-5. Create release tags after reviewing the results:
-
-   ```bash
-   git tag v1.0.0
-   git tag v1
-   git push origin v1.0.0 v1
-   ```
-
-For reuse across repositories, make this action repository public or configure
-GitHub's access settings for a private action. See `NOTICE.md` for the inherited
-catalogue's provenance and the license decision still needed for public reuse.
-This ZIP has not been published to GitHub or the Marketplace.
+For subsequent releases, create a new version tag and move the `v1` major
+version tag to that release. Consumers can pin the full release commit SHA
+instead if they require an immutable reference.
 
 ## Use it in another repository
 
 Copy `examples/scan.yml` to `.github/workflows/sensitive-scan.yml` in the repository
-that should be scanned. Replace `YOUR_ORG/generic-sensitive-scan@v1` with your
-published action. Pin it to the full release commit SHA for production use.
+that should be scanned. Use `KingBain/sensitivity-scan@v1` after the tag exists. Pin it to the full
+release commit SHA for production use.
 
 The example runs on pull requests, pushes to `main`, a weekly schedule, and manual
 requests. Change the default branch name if needed. It uploads reports as an
@@ -54,7 +42,7 @@ CRITICAL findings on pull requests:
 ```yaml
 - name: Scan sensitive information
   id: sensitive
-  uses: YOUR_ORG/generic-sensitive-scan@v1
+  uses: KingBain/sensitivity-scan@v1
   with:
     fail-on: HIGH
 ```
