@@ -1,0 +1,110 @@
+name: Generic Sensitive Information Scan
+description: Scan committed text for identifiers combined with names using modular YARA rules.
+author: Generic Sensitive Scan contributors
+branding:
+  icon: shield
+  color: blue
+inputs:
+  repository:
+    description: Path to the checked-out Git repository.
+    default: '.'
+  mode:
+    description: auto (PR changes, otherwise full), full, or changes.
+    default: auto
+  base:
+    description: Base commit/ref for changes mode; inferred for pull_request events.
+    default: ''
+  head:
+    description: Head commit/ref; inferred for pull_request events, otherwise HEAD.
+    default: ''
+  profile:
+    description: code or code-with-markings.
+    default: code
+  fail-on:
+    description: NONE, LOW, MEDIUM, HIGH, or CRITICAL. NONE reports without blocking on findings.
+    default: NONE
+  fail-on-skips:
+    description: Fail if any selected head or baseline file is skipped.
+    default: 'false'
+  max-file-bytes:
+    description: Maximum size of each Git blob to scan.
+    default: '2097152'
+  timeout:
+    description: YARA timeout in seconds per file, on each revision.
+    default: '10'
+  exclusions:
+    description: 'JSON array of exclusions, each with a glob and a reason.'
+    default: '[]'
+outputs:
+  findings-count:
+    description: Number of reported occurrences.
+    value: ${{ steps.scan.outputs.findings-count }}
+  sarif:
+    description: Absolute path to the SARIF report.
+    value: ${{ steps.scan.outputs.sarif }}
+  json:
+    description: Absolute path to findings and coverage JSON.
+    value: ${{ steps.scan.outputs.json }}
+  report-directory:
+    description: Absolute path to the directory containing all reports.
+    value: ${{ steps.scan.outputs.report-directory }}
+  exit-code:
+    description: '0: passed; 1: finding threshold reached; 2: scan or coverage failure.'
+    value: ${{ steps.scan.outputs.exit-code }}
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: '3.12'
+    - name: Install scanner runtime
+      id: runtime
+      shell: bash
+      env:
+        ACTION_ROOT: ${{ github.action_path }}
+      run: |
+        if [[ "$RUNNER_OS" != "Linux" ]]; then
+          echo 'This action supports Linux runners.' >&2
+          exit 2
+        fi
+        SCAN_VENV="$(mktemp -d "$RUNNER_TEMP/sensitive-scan-venv.XXXXXX")"
+        python -I -m venv "$SCAN_VENV"
+        "$SCAN_VENV/bin/python" -I -m pip --isolated install --disable-pip-version-check --only-binary=:all: -r "$ACTION_ROOT/requirements.txt"
+        echo "python=$SCAN_VENV/bin/python" >> "$GITHUB_OUTPUT"
+    - name: Scan committed text
+      id: scan
+      shell: bash
+      env:
+        ACTION_ROOT: ${{ github.action_path }}
+        SCAN_PYTHON: ${{ steps.runtime.outputs.python }}
+        SCAN_REPO: ${{ inputs.repository }}
+        SCAN_MODE: ${{ inputs.mode }}
+        SCAN_BASE: ${{ inputs.base }}
+        SCAN_HEAD: ${{ inputs.head }}
+        SCAN_PROFILE: ${{ inputs.profile }}
+        SCAN_FAIL_ON: ${{ inputs.fail-on }}
+        SCAN_FAIL_ON_SKIPS: ${{ inputs.fail-on-skips }}
+        SCAN_MAX_FILE_BYTES: ${{ inputs.max-file-bytes }}
+        SCAN_TIMEOUT: ${{ inputs.timeout }}
+        SCAN_EXCLUSIONS: ${{ inputs.exclusions }}
+      run: |
+        REPORT_DIR="$(mktemp -d "$RUNNER_TEMP/sensitive-scan-report.XXXXXX")"
+        args=(--repo "$SCAN_REPO" --mode "$SCAN_MODE" --base "$SCAN_BASE" --head "$SCAN_HEAD"
+          --profile "$SCAN_PROFILE" --fail-on "$SCAN_FAIL_ON" --max-file-bytes "$SCAN_MAX_FILE_BYTES"
+          --timeout "$SCAN_TIMEOUT" --exclusions "$SCAN_EXCLUSIONS" --output "$REPORT_DIR")
+        case "$SCAN_FAIL_ON_SKIPS" in
+          true) args+=(--fail-on-skips) ;;
+          false) ;;
+          *) echo 'fail-on-skips must be true or false.' >&2; exit 2 ;;
+        esac
+        set +e
+        "$SCAN_PYTHON" -I "$ACTION_ROOT/src/scan.py" "${args[@]}"
+        SCAN_EXIT=$?
+        set -e
+        echo "exit-code=$SCAN_EXIT" >> "$GITHUB_OUTPUT"
+    - name: Apply scan outcome
+      shell: bash
+      env:
+        SCAN_EXIT: ${{ steps.scan.outputs.exit-code }}
+      run: exit "$SCAN_EXIT"

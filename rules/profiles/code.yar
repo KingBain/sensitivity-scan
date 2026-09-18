@@ -1,0 +1,6 @@
+include "../indicators/identifiers.yar"
+include "../indicators/names.yar"
+include "../indicators/dates.yar"
+include "../logic/pri-with-name.yar"
+include "../logic/dob-with-name.yar"
+include "../logic/sin-with-name.yar"

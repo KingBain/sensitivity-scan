@@ -1,0 +1,37 @@
+# Copy to .github/workflows/sensitive-scan.yml in the repository to scan.
+# Replace YOUR_ORG/generic-sensitive-scan@v1 with your published repository and tag.
+# For production, replace v1 with the full commit SHA of the release you reviewed.
+name: Sensitive information Demo
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Scan
+        id: sensitive
+        uses: YOUR_ORG/generic-sensitive-scan@v1
+        with:
+          profile: code
+          fail-on: NONE
+      - name: Preserve reports
+        if: ${{ always() && steps.sensitive.outputs.report-directory != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sensitive-scan-results
+          path: ${{ steps.sensitive.outputs.report-directory }}
+          retention-days: 7
+          if-no-files-found: error
