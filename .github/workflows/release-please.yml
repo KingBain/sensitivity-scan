@@ -11,12 +11,13 @@ concurrency:
   group: release-please-main
   cancel-in-progress: false
 
-environment:
-  name: release
+
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment:
+      name: release
     timeout-minutes: 10
     steps:
       - name: Create release installation token
