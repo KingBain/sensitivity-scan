@@ -1,5 +1,5 @@
 # Copy to .github/workflows/sensitive-scan.yml in the repository to scan.
-# Replace YOUR_ORG/generic-sensitive-scan@v1 with your published repository and tag.
+# Tag v1 in KingBain/sensitivity-scan before using this example in other repositories.
 # For production, replace v1 with the full commit SHA of the release you reviewed.
 name: Sensitive information Demo
 on:
@@ -23,7 +23,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Scan
         id: sensitive
-        uses: YOUR_ORG/generic-sensitive-scan@v1
+        uses: KingBain/sensitivity-scan@v1
         with:
           profile: code
           fail-on: NONE
