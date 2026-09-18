@@ -23,14 +23,16 @@ The first release is configured as `v1.0.0`. `version.txt` starts at `0.0.0`
 until the first release pull request is merged. Scanner JSON and SARIF version
 fields read this file, so later releases report the current version.
 
-Before merging this setup, add the repository Actions secret
-`RELEASE_PLEASE_TOKEN`: a fine-grained personal access token scoped to this
-repository with **Contents**, **Pull requests** and **Issues** set to
-read/write. This lets the generated release pull request run the ordinary
-CI checks. The release workflow fails with a clear message when the secret is
-missing. The built-in `GITHUB_TOKEN` cannot trigger CI for a pull request it
-creates. An installation token from a GitHub App can also be used if you
-adapt the workflow to mint it during the run.
+Before merging this setup, create a GitHub App (or use an existing one)
+with **Contents**, **Pull requests**, and **Issues** set to read/write, then
+install it on `KingBain/sensitivity-scan`. Configure the repository Actions
+variable `RELEASE_APP_CLIENT_ID` with the App **client ID** and the Actions
+secret `RELEASE_APP_PRIVATE_KEY` with its PEM private key. These names match the
+release workflow. The workflow creates a short-lived installation token scoped
+to this repository for each run and uses it for release PRs and tags. The App
+token allows the release PR to trigger the ordinary CI workflow; the built-in
+`GITHUB_TOKEN` would not trigger that follow-on run. The release job reports a
+missing variable or secret before attempting a release.
 
 Use Conventional Commit titles for changes to the action:
 `feat: ...` proposes a minor version, `fix: ...` a patch version, and a

@@ -7,9 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: release-please-main
@@ -38,23 +36,37 @@ jobs:
             echo 'A newer main commit is awaiting its own CI run.'
           fi
 
-      - name: Check release credentials
+      - name: Check GitHub App configuration
         if: steps.current.outputs.ready == 'true'
         shell: bash
         env:
-          RELEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          RELEASE_APP_CLIENT_ID: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
         run: |
-          if [[ -z "$RELEASE_TOKEN" ]]; then
-            echo 'Set the RELEASE_PLEASE_TOKEN Actions secret to a token that can write contents, pull requests and issues.' >&2
+          if [[ -z "$RELEASE_APP_CLIENT_ID" || -z "$RELEASE_APP_PRIVATE_KEY" ]]; then
+            echo 'Set the RELEASE_APP_CLIENT_ID variable and RELEASE_APP_PRIVATE_KEY secret for an App installed on this repository.' >&2
             exit 1
           fi
+
+      - name: Create release installation token
+        if: steps.current.outputs.ready == 'true'
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
 
       - name: Propose or publish release
         if: steps.current.outputs.ready == 'true'
         id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
@@ -69,7 +81,7 @@ jobs:
         if: steps.release.outputs.release_created == 'true'
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
         run: bash tools/sync_major_tag.sh
