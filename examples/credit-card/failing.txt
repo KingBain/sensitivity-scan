@@ -1,0 +1,2 @@
+Synthetic demo only. This is a publicly documented payment-provider test number.
+credit_card: 4242 4242 4242 4242
