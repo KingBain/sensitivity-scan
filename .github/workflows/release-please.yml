@@ -36,11 +36,3 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      - name: Update major version tag
-        if: steps.release.outputs.release_created == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
-          RELEASE_SHA: ${{ steps.release.outputs.sha }}
-        run: bash tools/sync_major_tag.sh

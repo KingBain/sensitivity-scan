@@ -15,8 +15,7 @@ on pushes to `main`. The [Release Please workflow](.github/workflows/release-ple
 runs on every push to `main`. It opens or updates a release pull request with
 `CHANGELOG.md`, `version.txt` and the release manifest. Review and merge that
 pull request; release-please then creates the GitHub Release and its immutable
-`vMAJOR.MINOR.PATCH` tag. The workflow then advances the `vMAJOR` tag used
-by consumers.
+`vMAJOR.MINOR.PATCH` tag.
 
 The first release is configured as `v1.0.0`. `version.txt` starts at `0.0.0`
 until the first release pull request is merged. Scanner JSON and SARIF version
@@ -28,17 +27,17 @@ install it on `KingBain/sensitivity-scan`. Configure the repository Actions
 variable `RELEASE_APP_CLIENT_ID` with the App **client ID** and the Actions
 secret `RELEASE_APP_PRIVATE_KEY` with its PEM private key. These names match the
 release workflow. The workflow creates a short-lived installation token scoped
-to this repository for each run and uses it for release PRs and tags. The App
-token allows the release PR to trigger the ordinary CI workflow; the built-in
-`GITHUB_TOKEN` would not trigger that follow-on run.
+to this repository for release PRs and releases. The App token allows the
+release PR to trigger the ordinary CI workflow; the built-in `GITHUB_TOKEN`
+would not trigger that follow-on run.
 
 Use Conventional Commit titles for changes to the action:
 `feat: ...` proposes a minor version, `fix: ...` a patch version, and a
 breaking change proposes a major version. The initial release uses
 `initial-version: 1.0.0`; subsequent version bumps come from these commits.
 A `docs:` or `chore:` change alone does not open a new release pull request.
-The versioned tag stays fixed; the moving major tag (`v1`) points at the
-latest 1.x release.
+Release tags are immutable; consumers should pin an exact version tag or commit
+SHA.
 
 See [Release Please's action guide](https://github.com/googleapis/release-please-action)
 for the release PR process.
