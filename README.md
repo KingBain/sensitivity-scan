@@ -8,41 +8,45 @@ branch. It does not execute the repository being scanned.
 **27 core rules: 21 private helpers and 6 reporting rules.** The optional security
 markings profile brings the total to 33. All form-specific rules have been removed.
 
-## Create your action repository
+## Releases
 
-1. Extract this ZIP. `action.yml`, `README.md`, and the `rules` directory belong
-   at the root of the new repository.
-2. Create an empty GitHub repository, for example `generic-sensitive-scan`.
-3. From the extracted directory, run the following with your repository URL:
+The [Test scanner workflow](.github/workflows/ci.yml) runs on pull requests and
+on pushes to `main`. The [Release Please workflow](.github/workflows/release-please.yml)
+runs on every push to `main`. It opens or updates a release pull request with
+`CHANGELOG.md`, `version.txt` and the release manifest. Review and merge that
+pull request; release-please then creates the GitHub Release and its immutable
+`vMAJOR.MINOR.PATCH` tag.
 
-   ```bash
-   git init -b main
-   git add .
-   git commit -m "Initial generic sensitive information scanner"
-   git remote add origin https://github.com/YOUR_ORG/generic-sensitive-scan.git
-   git push -u origin main
-   ```
+The first release is configured as `v1.0.0`. `version.txt` starts at `0.0.0`
+until the first release pull request is merged. Scanner JSON and SARIF version
+fields read this file, so later releases report the current version.
 
-4. Check that the included **Test scanner** workflow passes. It runs the rule
-   and Git integration tests, checks rule generation, and smoke-tests the action.
-5. Create release tags after reviewing the results:
+Before merging this setup, create a GitHub App (or use an existing one)
+with **Contents**, **Pull requests**, and **Issues** set to read/write, then
+install it on `KingBain/sensitivity-scan`. Configure the repository Actions
+variable `RELEASE_APP_CLIENT_ID` with the App **client ID** and the Actions
+secret `RELEASE_APP_PRIVATE_KEY` with its PEM private key. These names match the
+release workflow. The workflow creates a short-lived installation token scoped
+to this repository for release PRs and releases. The App token allows the
+release PR to trigger the ordinary CI workflow; the built-in `GITHUB_TOKEN`
+would not trigger that follow-on run.
 
-   ```bash
-   git tag v1.0.0
-   git tag v1
-   git push origin v1.0.0 v1
-   ```
+Use Conventional Commit titles for changes to the action:
+`feat: ...` proposes a minor version, `fix: ...` a patch version, and a
+breaking change proposes a major version. The initial release uses
+`initial-version: 1.0.0`; subsequent version bumps come from these commits.
+A `docs:` or `chore:` change alone does not open a new release pull request.
+Release tags are immutable; consumers should pin an exact version tag or commit
+SHA.
 
-For reuse across repositories, make this action repository public or configure
-GitHub's access settings for a private action. See `NOTICE.md` for the inherited
-catalogue's provenance and the license decision still needed for public reuse.
-This ZIP has not been published to GitHub or the Marketplace.
+See [Release Please's action guide](https://github.com/googleapis/release-please-action)
+for the release PR process.
 
 ## Use it in another repository
 
 Copy `examples/scan.yml` to `.github/workflows/sensitive-scan.yml` in the repository
-that should be scanned. Replace `YOUR_ORG/generic-sensitive-scan@v1` with your
-published action. Pin it to the full release commit SHA for production use.
+that should be scanned. Use `KingBain/sensitivity-scan@v1` after the tag exists. Pin it to the full
+release commit SHA for production use.
 
 The example runs on pull requests, pushes to `main`, a weekly schedule, and manual
 requests. Change the default branch name if needed. It uploads reports as an
@@ -54,7 +58,7 @@ CRITICAL findings on pull requests:
 ```yaml
 - name: Scan sensitive information
   id: sensitive
-  uses: YOUR_ORG/generic-sensitive-scan@v1
+  uses: KingBain/sensitivity-scan@v1
   with:
     fail-on: HIGH
 ```

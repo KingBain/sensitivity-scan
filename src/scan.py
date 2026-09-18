@@ -19,6 +19,7 @@ from urllib.parse import quote
 import yara
 
 ROOT = Path(__file__).resolve().parents[1]
+VERSION = (ROOT / "version.txt").read_text(encoding="utf-8").strip()
 SEVERITIES = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 
 
@@ -249,7 +250,7 @@ def scan(options):
             findings.append(finding)
         if len(findings) > 10000:
             raise ScanError("More than 10,000 findings; narrow the scan with reviewed exclusions.")
-    return {"tool": "generic-sensitive-scan", "version": "1.0.0", "mode": mode,
+    return {"tool": "generic-sensitive-scan", "version": VERSION, "mode": mode,
             "profile": options.profile, "head": head, "base": base,
             "findings": findings, "coverage": coverage, "errors": []}
 
@@ -279,7 +280,7 @@ def sarif(report):
         results.append(result)
     errors = report["errors"]
     return {"version": "2.1.0", "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json", "runs": [{
-        "tool": {"driver": {"name": "generic-sensitive-scan", "version": "1.0.0", "rules": list(rules.values())}},
+        "tool": {"driver": {"name": "generic-sensitive-scan", "version": VERSION, "rules": list(rules.values())}},
         "automationDetails": {"id": "generic-sensitive-scan/" + report.get("profile", "code") + "/"},
         "invocations": [{"executionSuccessful": not errors, "toolExecutionNotifications": [
             {"level": "error", "message": {"text": error}} for error in errors]}],
