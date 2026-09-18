@@ -1,71 +1,83 @@
-# Generic Sensitive Information Scan
+# Sensitivity Scan
 
-A reusable GitHub Action that runs YARA over committed text files. It flags
-labelled personal identifiers combined with names, reports evidence locations,
-and compares pull-request changes against their common ancestor with the base
-branch. It does not execute the repository being scanned.
+A GitHub Action that uses YARA to flag potentially sensitive information in
+committed text files. It scans a whole repository or checks what a pull request
+introduces, without executing the code being scanned.
 
-**27 core rules: 21 private helpers and 6 reporting rules.** The optional security
-markings profile brings the total to 33. All form-specific rules have been removed.
+The default rules look for **a labelled identifier together with a name**:
+PRI/CIDP, date of birth, or SIN/NAS. Findings are candidates for review, not
+authoritative security classifications. Reports show files and line numbers,
+but omit matched values.
 
-## Releases
+## Quick start
 
-The [Test scanner workflow](.github/workflows/ci.yml) runs on pull requests and
-on pushes to `main`. The [Release Please workflow](.github/workflows/release-please.yml)
-runs on every push to `main`. It opens or updates a release pull request with
-`CHANGELOG.md`, `version.txt` and the release manifest. Review and merge that
-pull request; release-please then creates the GitHub Release and its immutable
-`vMAJOR.MINOR.PATCH` tag.
-
-The first release is configured as `v1.0.0`. `version.txt` starts at `0.0.0`
-until the first release pull request is merged. Scanner JSON and SARIF version
-fields read this file, so later releases report the current version.
-
-Before merging this setup, create a GitHub App (or use an existing one)
-with **Contents**, **Pull requests**, and **Issues** set to read/write, then
-install it on `KingBain/sensitivity-scan`. Configure the repository Actions
-variable `RELEASE_APP_CLIENT_ID` with the App **client ID** and the Actions
-secret `RELEASE_APP_PRIVATE_KEY` with its PEM private key. These names match the
-release workflow. The workflow creates a short-lived installation token scoped
-to this repository for release PRs and releases. The App token allows the
-release PR to trigger the ordinary CI workflow; the built-in `GITHUB_TOKEN`
-would not trigger that follow-on run.
-
-Use Conventional Commit titles for changes to the action:
-`feat: ...` proposes a minor version, `fix: ...` a patch version, and a
-breaking change proposes a major version. The initial release uses
-`initial-version: 1.0.0`; subsequent version bumps come from these commits.
-A `docs:` or `chore:` change alone does not open a new release pull request.
-Release tags are immutable; consumers should pin an exact version tag or commit
-SHA.
-
-See [Release Please's action guide](https://github.com/googleapis/release-please-action)
-for the release PR process.
-
-## Use it in another repository
-
-Copy `examples/scan.yml` to `.github/workflows/sensitive-scan.yml` in the repository
-that should be scanned. Use `KingBain/sensitivity-scan@v1` after the tag exists. Pin it to the full
-release commit SHA for production use.
-
-The example runs on pull requests, pushes to `main`, a weekly schedule, and manual
-requests. Change the default branch name if needed. It uploads reports as an
-artifact and requires only `contents: read`.
-
-The action defaults to **report-only** (`fail-on: NONE`). To block new HIGH or
-CRITICAL findings on pull requests:
+Add this as `.github/workflows/sensitivity-scan.yml` in the repository to scan:
 
 ```yaml
-- name: Scan sensitive information
-  id: sensitive
-  uses: KingBain/sensitivity-scan@v1
-  with:
-    fail-on: HIGH
+name: Sensitivity scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Scan sensitive information
+        id: sensitive
+        uses: KingBain/sensitivity-scan@v1.0.0
+        with:
+          fail-on: NONE
 ```
 
-`MEDIUM` also blocks PRI/name and DOB/name findings. Scanner errors fail the step
-regardless of this setting. A match is a review candidate, not an authoritative
-security classification.
+Start in report-only mode (`NONE`), review the job summary, then change
+`fail-on` to `HIGH` to block HIGH/CRITICAL findings. `MEDIUM` also blocks
+PRI/name and DOB/name findings. Scanner errors fail regardless of this setting.
+A green report-only run does **not** mean there were no findings.
+
+`mode: auto` is the default: pull requests scan for newly introduced findings;
+pushes and manual runs scan the selected commit in full. Keep `fetch-depth: 0`
+for PR comparisons. Change `main` if your default branch has another name.
+
+For artifact uploads (including failed scans) and a scheduled full scan, copy
+[examples/scan.yml](examples/scan.yml). For production, pin the action to the full
+commit SHA of the release you reviewed. This project uses exact version tags
+such as `v1.0.0`, not a moving `v1` tag.
+
+## Try a passing and a failing pipeline
+
+| Example | Expected result |
+|---|---|
+| [Passing scan](.github/workflows/example-passing.yml) | Synthetic fixture with a redacted identifier; green, zero findings |
+| [Failing scan](.github/workflows/example-failing.yml) | Synthetic SIN + name; red, one HIGH finding |
+
+These are manual demos using the published action. They create a tiny temporary
+Git repository, commit the fixture locally, scan it and save reports. The failing
+demo is intentionally red; it is not run automatically on pushes or PRs.
+See [how to run the examples](examples/README.md).
+
+## Create your own rules
+
+Follow [Create your own rules](docs/custom-rules.md) for a copyable, tested
+credit-card-number example, an explanation of the required YARA metadata, and
+instructions for adding it to a fork of the action.
+
+The current action loads bundled profiles only; it does not accept a
+`rules-path` input or auto-load rules from the repository being scanned.
+The credit-card example is opt-in and is **not** enabled by `v1.0.0`.
+It detects labelled 16-digit candidates, not validated card accounts.
 
 ## Rules and folders
 
@@ -241,6 +253,26 @@ Use the standard `pull_request` event and a read-only token. Do not use
 `pull_request_target` with an untrusted checkout. The maintainer CI uses `./`
 only to test changes to this action itself; copy the external-action consumer
 example for scanning other repositories.
+
+## Releases (maintainers)
+
+[Release Please](.github/workflows/release-please.yml) runs on pushes to `main`.
+It opens or updates a release PR with the changelog, `version.txt` and the
+release manifest. Merging that PR publishes the GitHub Release and exact
+`vMAJOR.MINOR.PATCH` tag. There is no moving major-tag updater.
+Scanner JSON and SARIF versions come from `version.txt`.
+
+The release job uses the `release` environment. Install a GitHub App on this
+repository with Contents, Pull requests and Issues read/write permissions.
+Configure `SENS_RELEASE_APP_CLIENT_ID` as an environment variable under GitHub
+Actions **Variables** (not a shell variable) and `SENS_RELEASE_APP_PRIVATE_KEY`
+as an environment secret. These names match the workflow. Consumers running the
+scanner do not need this App or these secrets.
+
+Use Conventional Commit titles: `fix:` for patches, `feat:` for features,
+and a breaking-change marker for major changes. `docs:` or `chore:` changes
+alone do not normally open a new release PR. See the
+[release-please action guide](https://github.com/googleapis/release-please-action).
 
 ## References
 

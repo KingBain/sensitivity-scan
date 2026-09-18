@@ -1,0 +1,2 @@
+Synthetic demo only. The value is masked.
+credit_card: **** **** **** 4242

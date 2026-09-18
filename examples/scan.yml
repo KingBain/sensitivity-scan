@@ -1,7 +1,7 @@
 # Copy to .github/workflows/sensitive-scan.yml in the repository to scan.
 # Replace v1.0.0 below with the immutable release tag you reviewed.
 # For production, pin the action to the full commit SHA of that release.
-name: Sensitive information Demo
+name: Sensitivity scan
 on:
   pull_request:
   push:
