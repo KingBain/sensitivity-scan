@@ -11,13 +11,12 @@ markings profile brings the total to 33. All form-specific rules have been remov
 ## Releases
 
 The [Test scanner workflow](.github/workflows/ci.yml) runs on pull requests and
-on pushes to `main`. After a successful `main` run, the
-[Release Please workflow](.github/workflows/release-please.yml) checks that CI
-tested the latest `main` commit. Release Please then opens or updates a
-release pull request with `CHANGELOG.md`, `version.txt` and the release
-manifest. Review and merge that pull request; the next successful `main` CI
-run creates the GitHub Release and its immutable `vMAJOR.MINOR.PATCH` tag.
-The workflow then creates or advances the `vMAJOR` tag used by consumers.
+on pushes to `main`. The [Release Please workflow](.github/workflows/release-please.yml)
+runs on every push to `main`. It opens or updates a release pull request with
+`CHANGELOG.md`, `version.txt` and the release manifest. Review and merge that
+pull request; release-please then creates the GitHub Release and its immutable
+`vMAJOR.MINOR.PATCH` tag. The workflow then advances the `vMAJOR` tag used
+by consumers.
 
 The first release is configured as `v1.0.0`. `version.txt` starts at `0.0.0`
 until the first release pull request is merged. Scanner JSON and SARIF version
@@ -31,8 +30,7 @@ secret `RELEASE_APP_PRIVATE_KEY` with its PEM private key. These names match the
 release workflow. The workflow creates a short-lived installation token scoped
 to this repository for each run and uses it for release PRs and tags. The App
 token allows the release PR to trigger the ordinary CI workflow; the built-in
-`GITHUB_TOKEN` would not trigger that follow-on run. The release job reports a
-missing variable or secret before attempting a release.
+`GITHUB_TOKEN` would not trigger that follow-on run.
 
 Use Conventional Commit titles for changes to the action:
 `feat: ...` proposes a minor version, `fix: ...` a patch version, and a
