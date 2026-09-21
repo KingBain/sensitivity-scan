@@ -53,3 +53,17 @@ The pipeline demos use the bundled SIN/name rule. The separate
 not part of the published default profile. Follow [Create your own rules](../docs/custom-rules.md)
 to test it and integrate it into a fork. For optional GitHub Code Scanning upload,
 see [sarif-upload.md](sarif-upload.md).
+
+## Structured records
+
+The [structured examples](structured) contain the same synthetic employees in
+XML, JSON and YAML. Each should produce three findings with the new adapter:
+SIN/name (HIGH), PRI/name (MEDIUM), and DOB/name (MEDIUM). The test workflow checks
+these fixtures through the scanner and checks their original line numbers.
+
+That directory also includes an opt-in `PROTECTED A` boolean-flag rule and a JSON
+fixture with both `true` and `false`. Only the `true` record matches that example
+rule. See [Structured data](../docs/structured-data.md) for how to use it. These
+structured examples require a release newer than `v1.0.0` that includes the
+adapter, or a reviewed commit SHA; the manual pipeline demos above still exercise
+the published text-scanning release.

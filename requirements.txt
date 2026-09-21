@@ -1,1 +1,2 @@
 yara-python==4.5.4
+PyYAML==6.0.3

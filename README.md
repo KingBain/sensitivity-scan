@@ -2,7 +2,7 @@
 
 A low-noise, context-aware GitHub Action that detects Canadian PII (SIN, PRI, DOB) in your codebase before it gets merged.
 
-Unlike traditional secret scanners that drown you in false positives by flagging every random 9-digit number, this scanner uses YARA rules to look for **a labelled identifier *in proximity* to a name**. 
+The scanner uses YARA rules to look for **a labelled identifier with a full name, or both first and last names**. In XML, JSON and YAML, the fields must belong to the same record. Other text files use file-wide matching.
 
 Reports show the files and line numbers of the findings, but safely **omit the matched sensitive values**.
 
@@ -46,7 +46,7 @@ The Action automatically adapts its behavior based on how it is triggered (`mode
 * **Pushes & Manual Runs (Full Mode):** Scans the entire repository at the selected commit.
 
 ### What does it look for?
-By default, the scanner requires an English or French label + a valid identifier format + proximity to a name field.
+By default, the scanner requires an English or French label + a valid identifier format + the supporting name fields.
 
 | Combination | Severity |
 |---|---|
@@ -54,6 +54,33 @@ By default, the scanner requires an English or French label + a valid identifier
 | 🏢 **PRI / CIDP** + Name | `MEDIUM` |
 | 🎂 **Date of Birth** + Name | `MEDIUM` |
 | 🛡️ **NATO / UK Security Markings** | *Optional* (See `profile` input) |
+
+### Structured files
+
+XML tags and attributes, JSON properties, and YAML keys are read as fields. You
+can use natural data structures without repeating labels inside their values:
+
+```xml
+<employee>
+  <firstname>John</firstname>
+  <lastname>Example</lastname>
+  <pri>12345678</pri>
+  <dob>1990-01-01</dob>
+</employee>
+```
+
+This produces PRI/name and DOB/name findings. A first name alone still does not
+qualify. Separate records are scanned independently, and reports retain the
+original file's line numbers.
+
+Extraction handles **every scalar field**, not a fixed list of personal-data
+keys. YARA rules decide what matches. For example, the opt-in
+[Protected A flag rule](examples/structured/protected-a.yar) matches
+`"PROTECTED A": true` but not `false`. The [structured-data guide](docs/structured-data.md)
+explains record boundaries, examples, and supported formats.
+
+Structured extraction was added after `v1.0.0`; use a release containing this
+change or a reviewed commit SHA to use it.
 
 ## ⚙️ Key Configuration Inputs
 
@@ -84,7 +111,8 @@ The Action generates artifacts in the runner's temporary directory:
 <summary><b>🔍 Matching Behavior & Limitations</b></summary>
 
 * **File Types:** Scans UTF-8/ASCII text in Git blobs. Files over 2 MiB, binaries, encoded/encrypted files, and Git LFS objects are skipped.
-* **Formatting:** Names require `:` or `=` (e.g., `"first_name": "Jane"` or `lastName = "Example"`). A full name requires at least two words. 
+* **Formatting:** `.xml`, `.json`, `.yaml` and `.yml` files use structured extraction. Other text requires labelled fields such as `first_name: Jane` or `lastName = "Example"`. A full name requires at least two words.
+* **Record boundaries:** Nested objects and separate array/list items are independent. Parent fields are not inherited by child records. Invalid or unsupported structured input fails the scan with exit `2`; it is not reported as clean.
 * **Validation:** DOB accepts numeric dates from 1800–2099 but does not validate real calendar dates. SIN has no checksum validation.
 * **Context is Key:** A bare identifier without a supported name field will *not* produce a finding. This tool complements, rather than replaces, standard API key/secret scanners.
 </details>

@@ -78,6 +78,49 @@ formats. A 16-digit order number in a card-labelled field can still match. Treat
 the result as a candidate for review, not proof of a real card or a classification.
 The example is **not enabled in the default profiles**.
 
+## Use the same rule with XML, JSON and YAML
+
+The action extracts all scalar fields from structured files and runs YARA once
+per record. The credit-card rule above can therefore also match these inputs:
+
+```xml
+<payment><credit_card>4242424242424242</credit_card></payment>
+```
+
+```json
+{"credit_card": "4242424242424242"}
+```
+
+```yaml
+credit_card: "4242424242424242"
+```
+
+Each record is presented to YARA as one quoted key/value pair per line:
+
+```text
+"credit_card": "4242424242424242"
+```
+
+All scalar values become strings, including numbers and booleans. Key names are
+preserved; aliases such as `card_number` belong in your YARA rule. XML namespace
+prefixes are removed. Reports map findings back to the original value's source
+line; the normalized text is not written to reports.
+
+For a different kind of field, see the opt-in
+[Protected A flag rule](../examples/structured/protected-a.yar). It requires the
+normalized field `"PROTECTED A": "true"` (also accepting `PROTECTED_A` or
+`PROTECTED-A`) and leaves `false`, `null`, and schema declarations unmatched.
+Both boolean `true` and string `"true"` match because normalization is textual.
+Enable it in your fork using the same steps below, substituting
+`structured/protected-a.yar` and `custom/protected-a` for the card example paths.
+
+The adapter is part of this action, not the YARA CLI. Running `yara` directly on
+an XML file does not perform extraction. The CI cases in `tests/test_structured.py`
+exercise both example rules through the adapter. See
+[Structured data](structured-data.md) for boundaries and limitations. Structured
+extraction was added after `v1.0.0`; consumers need a release containing it or a
+reviewed commit SHA.
+
 ## Test it locally
 
 From a clone of this repository, install the same runtime as the action:

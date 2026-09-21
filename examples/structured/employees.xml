@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<employees>
+    <employee first_name="Jane" last_name="Example">
+        <sin>000-000-000</sin>
+    </employee>
+    <employee>
+        <firstname>John</firstname>
+        <lastname>Example</lastname>
+        <pri>12345678</pri>
+        <dob>1990-01-01</dob>
+    </employee>
+</employees>
