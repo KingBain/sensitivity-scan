@@ -1,4 +1,4 @@
-// Teaching rule: opt in through a reviewed fork, like the credit-card example.
+// Teaching rule: isolates one flag already provided by code-with-markings.
 // The adapter presents all scalar values as strings, including boolean flags.
 rule example_protected_a_flag : security_marking
 {

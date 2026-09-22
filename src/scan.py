@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # -I omits the script directory. Add only the action's own trusted source path,
 # never the working directory of the repository being scanned.
 sys.path.insert(0, str(ROOT / "src"))
-import structured_data
+import field_syntax
 
 VERSION = (ROOT / "version.txt").read_text(encoding="utf-8").strip()
 SEVERITIES = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
@@ -137,15 +137,15 @@ def detect_file(rules, data, path, timeout=10):
     """Use the same rules on each record, restoring original source locations."""
     deadline = time.monotonic() + timeout
     try:
-        records = structured_data.extract(path, data)
-        if records is None:
-            return detect(rules, data, timeout)
+        records = field_syntax.extract(data)
         results = []
         for record in records:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise ScanError('Structured scan exceeded the per-file timeout.')
-            normalised, source_lines = structured_data.normalise(record)
+            normalised, source_lines = field_syntax.normalise(record)
+            if not source_lines:
+                continue
             for finding in detect(rules, normalised, max(1, math.ceil(remaining))):
                 finding['line'] = source_lines[finding['line'] - 1]
                 finding['evidence_lines'] = sorted({source_lines[n - 1] for n in finding['evidence_lines']})
@@ -160,7 +160,7 @@ def detect_file(rules, data, path, timeout=10):
             counts[finding['rule']] += 1
             finding['ordinal'] = counts[finding['rule']]
         return results
-    except structured_data.StructureError as exc:
+    except field_syntax.StructureError as exc:
         raise ScanError(f'Structured scan failed for {path}: {exc}') from exc
 
 
@@ -270,10 +270,7 @@ def scan(options):
         if old_path is None and len(deleted_by_oid[blob.oid]) == 1:
             old_path = deleted_by_oid[blob.oid][0]
         old = base_tree.get(old_path)
-        same_format = (old_path is not None and
-                       structured_data.FORMATS.get(Path(old_path).suffix.lower()) ==
-                       structured_data.FORMATS.get(Path(path).suffix.lower()))
-        if mode == "changes" and old == blob and same_format:
+        if mode == "changes" and old == blob:
             coverage["unchanged"] += 1
             continue
         data = load_blob(options.repo, path, blob, options, exclusions, coverage, "head")

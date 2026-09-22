@@ -8,7 +8,7 @@ rule marking_nato_restricted_en : security_marking
         evidence_model = "marking"
         assessment = "review_required"
     strings:
-        $marking = /\bNATO[ \t]+RESTRICTED\b/ nocase
+        $marking = /\bNATO[ _\t-]+RESTRICTED\b/ nocase
     condition:
         $marking
 }
@@ -21,7 +21,7 @@ rule marking_nato_restricted_fr : security_marking
         evidence_model = "marking"
         assessment = "review_required"
     strings:
-        $marking = /\bOTAN[ \t]+DIFFUSION[ \t]+RESTREINTE\b/ nocase
+        $marking = /\bOTAN[ _\t-]+DIFFUSION[ _\t-]+RESTREINTE\b/ nocase
     condition:
         $marking
 }
@@ -34,7 +34,7 @@ rule marking_nato_unclassified_en : security_marking
         evidence_model = "marking"
         assessment = "review_required"
     strings:
-        $marking = /\bNATO[ \t]+UNCLASSIFIED\b/ nocase
+        $marking = /\bNATO[ _\t-]+UNCLASSIFIED\b/ nocase
     condition:
         $marking
 }
@@ -47,7 +47,7 @@ rule marking_nato_unclassified_fr : security_marking
         evidence_model = "marking"
         assessment = "review_required"
     strings:
-        $marking = /\bOTAN[ \t]+NON-CLASSIFI(\xC3\x89|\xC3\xA9)/ nocase
+        $marking = /\bOTAN[ _\t-]+NON[ _-]+CLASSIFI(\xC3\x89|\xC3\xA9)/ nocase
     condition:
         $marking
 }
@@ -60,7 +60,7 @@ rule marking_uk_official_en : security_marking
         evidence_model = "marking"
         assessment = "review_required"
     strings:
-        $marking = /\bUK[ \t:]+OFFICIAL\b/ nocase
+        $marking = /\bUK[ _\t:-]+OFFICIAL\b/ nocase
     condition:
         $marking
 }
@@ -73,7 +73,7 @@ rule marking_uk_official_fr : security_marking
         evidence_model = "marking"
         assessment = "review_required"
     strings:
-        $marking = /\bRU[ \t:]+OFFICIEL\b/ nocase
+        $marking = /\bRU[ _\t:-]+OFFICIEL\b/ nocase
     condition:
         $marking
 }

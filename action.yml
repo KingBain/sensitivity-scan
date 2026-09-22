@@ -1,5 +1,5 @@
 name: Generic Sensitive Information Scan
-description: Scan committed text and XML, JSON or YAML records using modular YARA rules.
+description: Scan common field syntax in committed text and source code using modular YARA rules.
 author: Generic Sensitive Scan contributors
 branding:
   icon: shield
@@ -18,7 +18,7 @@ inputs:
     description: Head commit/ref; inferred for pull_request events, otherwise HEAD.
     default: ''
   profile:
-    description: code or code-with-markings.
+    description: code (identifiers with names) or code-with-markings (also GC classification flags and NATO/UK markings).
     default: code
   fail-on:
     description: NONE, LOW, MEDIUM, HIGH, or CRITICAL. NONE reports without blocking on findings.
