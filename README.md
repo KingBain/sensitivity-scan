@@ -1,11 +1,15 @@
-# Sensitivity Scan
+# Sensitivity Smell
 
 Help people notice possible sensitive data, decide what to do next, and support
 their organization's security controls.
 
-Sensitivity Scan is a GitHub Action that uses YARA rules to flag a documented set
+Sensitivity Smell is a GitHub Action that uses YARA rules to flag a documented set
 of patterns in committed text and source code. Findings identify files and lines
 for human review. Reports omit matched values.
+
+The name borrows from "code smell": a sensitivity smell is a pattern worth
+investigating. It points to a possible concern and leaves the handling decision
+to the reviewer.
 
 Detection is best effort: false positives and missed sensitive data are expected.
 A finding does not establish sensitivity or classification, and zero findings
@@ -16,10 +20,10 @@ workflows.
 
 ## Start with reporting
 
-Add `.github/workflows/sensitivity-scan.yml` to the repository you want to scan:
+Add `.github/workflows/sensitivity-smell.yml` to the repository you want to scan:
 
 ```yaml
-name: Sensitivity scan
+name: Sensitivity Smell
 
 on:
   pull_request:
@@ -42,25 +46,25 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Review possible sensitive data
         id: sensitive
-        uses: KingBain/sensitivity-scan@v1.0.0
+        uses: KingBain/sensitivity-smell@v1.1.0
         with:
           fail-on: NONE
       - name: Preserve reports
         if: ${{ always() && steps.sensitive.outputs.report-directory != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: sensitivity-scan-results
+          name: sensitivity-smell-results
           path: ${{ steps.sensitive.outputs.report-directory }}
           retention-days: 7
           if-no-files-found: error
 ```
 
-The example uses the published `v1.0.0` text-scanning release. Common field
-extraction and GC boolean flags were added after that release; select a release
-containing those changes, or a reviewed commit SHA, to use them. Pin production
-workflows to the full commit SHA you reviewed. This guide describes the current
-source; check the [release notes](https://github.com/KingBain/sensitivity-scan/releases)
-for the version you deploy.
+The example uses the published `v1.1.0` release, which includes common field
+extraction and GC boolean flags. Pin production workflows to the full commit SHA
+you reviewed. This guide describes the current source; check the
+[release notes](https://github.com/KingBain/sensitivity-smell/releases) for the version
+you deploy. The renamed report identifiers are in source after `v1.1.0`; see
+[upgrading existing integrations](docs/implementation.md#upgrading-existing-integrations).
 
 Read the job summary and the `findings.json` artifact, including coverage and
 skip reasons. With `fail-on: NONE`, findings do not fail the check; scan errors

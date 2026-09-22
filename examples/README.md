@@ -27,7 +27,7 @@ They run only on manual request, not on every push or PR.
 
 Each workflow checks out these fixtures, copies just one file into a temporary
 Git repository, commits it locally, and scans that repository using the published
-`KingBain/sensitivity-scan@v1.0.0` action with `mode: full` and `fail-on: HIGH`.
+`KingBain/sensitivity-smell@v1.1.0` action with `mode: full` and `fail-on: HIGH`.
 Nothing is pushed. This avoids other source files or test fixtures affecting the
 demonstration. Merely writing a file without committing it would not test this
 scanner, because it reads committed Git blobs.
@@ -82,6 +82,5 @@ declaration for review, without establishing the content's classification.
 The profile covers every term
 from the sensitivity grid in English and French. See
 [Field syntax](../docs/field-syntax.md) for the list and severities. These
-structured examples require a release newer than `v1.0.0` that includes the
-adapter, or a reviewed commit SHA; the manual pipeline demos above still exercise
-the published text-scanning release.
+structured examples require `v1.1.0` or later. The manual pipeline demos use the
+same published release through the renamed `KingBain/sensitivity-smell` path.

@@ -31,7 +31,7 @@ jobs:
 
       - name: Scan the fixture
         id: sensitive
-        uses: KingBain/sensitivity-scan@v1.0.0
+        uses: KingBain/sensitivity-smell@v1.1.0
         with:
           repository: ${{ steps.fixture.outputs.repository }}
           mode: full

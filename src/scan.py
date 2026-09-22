@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scan committed Git blobs with the bundled YARA profiles; emit value-free reports."""
+"""Sensitivity Smell: scan committed Git blobs with YARA; emit value-free reports."""
 from __future__ import annotations
 
 import argparse
@@ -295,7 +295,7 @@ def scan(options):
             findings.append(finding)
         if len(findings) > 10000:
             raise ScanError("More than 10,000 findings; narrow the scan with reviewed exclusions.")
-    return {"tool": "generic-sensitive-scan", "version": VERSION, "mode": mode,
+    return {"tool": "sensitivity-smell", "version": VERSION, "mode": mode,
             "profile": options.profile, "head": head, "base": base,
             "findings": findings, "coverage": coverage, "errors": []}
 
@@ -325,8 +325,8 @@ def sarif(report):
         results.append(result)
     errors = report["errors"]
     return {"version": "2.1.0", "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json", "runs": [{
-        "tool": {"driver": {"name": "generic-sensitive-scan", "version": VERSION, "rules": list(rules.values())}},
-        "automationDetails": {"id": "generic-sensitive-scan/" + report.get("profile", "code") + "/"},
+        "tool": {"driver": {"name": "sensitivity-smell", "version": VERSION, "rules": list(rules.values())}},
+        "automationDetails": {"id": "sensitivity-smell/" + report.get("profile", "code") + "/"},
         "invocations": [{"executionSuccessful": not errors, "toolExecutionNotifications": [
             {"level": "error", "message": {"text": error}} for error in errors]}],
         "results": results}]}
@@ -338,7 +338,7 @@ def write_reports(report, directory):
     (directory / "findings.sarif").write_text(json.dumps(sarif(report), indent=2) + "\n")
     counts = Counter(f["severity"] for f in report["findings"])
     coverage = report.get("coverage", {})
-    lines = ["## Sensitive information scan", "", f"Findings: **{len(report['findings'])}**. Mode: **{report.get('mode', 'unknown')}**.", "",
+    lines = ["## Sensitivity Smell", "", f"Findings: **{len(report['findings'])}**. Mode: **{report.get('mode', 'unknown')}**.", "",
              "Matched values are omitted. Classification labels are candidates for review.", ""]
     lines.extend(f"- {key}: {counts[key]}" for key in SEVERITIES if counts[key])
     lines += ["", f"Files scanned: {coverage.get('scanned_head', 0)}; baseline files scanned: {coverage.get('scanned_base', 0)}; skipped: {len(coverage.get('skipped', []))}.",
@@ -389,7 +389,7 @@ def main(argv=None):
         # Exceptions from native libraries can contain input text. Report their type only.
         report = {"profile": options.profile, "findings": [], "errors": ["Scan failed (" + type(exc).__name__ + "). Check rules, Git history and resource limits."]}
     write_reports(report, options.output)
-    print(f"Sensitive scan: {len(report['findings'])} findings; {len(report['errors'])} errors.")
+    print(f"Sensitivity Smell: {len(report['findings'])} findings; {len(report['errors'])} errors.")
     if report["errors"]:
         print(report["errors"][0], file=sys.stderr)
         return 2

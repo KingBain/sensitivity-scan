@@ -141,8 +141,7 @@ The adapter is part of this action, not the YARA CLI. Running `yara` directly on
 an XML file does not perform extraction. The CI cases in `tests/test_structured.py`
 exercise both example rules through the adapter. See
 [Field syntax](field-syntax.md) for boundaries and limitations. Structured
-extraction was added after `v1.0.0`; consumers need a release containing it or a
-reviewed commit SHA.
+extraction is available in `v1.1.0` and later.
 
 ## Validate through a pull request
 
@@ -197,11 +196,11 @@ contract. Avoid `yara -s`, which prints matched values.
    Commit the custom rule, generator change, generated profile and updated tests
    together. Open a PR and use the `Test scanner` workflow to validate them.
 5. Publish a versioned release of your fork. In consumer workflows, replace
-   `KingBain/sensitivity-scan@v1.0.0` with your fork and its actual release tag
+   `KingBain/sensitivity-smell@v1.1.0` with your fork and its actual release tag
    (or full commit SHA). Keep `profile: code` and start with `fail-on: NONE` to
    review results. `fail-on: HIGH` optionally fails the check on matches.
 
-The upstream `v1.0.0` release will not acquire your fork's rule. The repository
+An upstream release will not acquire your fork's rule. The repository
 being scanned supplies data, not executable code or an automatically trusted
 rule pack. Review rule changes separately and do not load rules from an untrusted
 pull-request checkout into a privileged workflow.

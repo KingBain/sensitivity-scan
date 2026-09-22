@@ -1,10 +1,10 @@
-# Copy to .github/workflows/sensitive-scan.yml in the repository to scan.
+# Copy to .github/workflows/sensitivity-smell.yml in the repository to scan.
 # Start with reports and assign a reviewer; findings are possible sensitive data.
-# This published v1.0.0 example checks text patterns. For common field extraction
-# and GC boolean flags, select a release containing those later changes.
+# This published v1.1.0 example includes common field extraction and GC flags.
+# Rebranded report identifiers require a later release or reviewed commit.
 # For production, pin the action to the full commit SHA you reviewed.
 # fail-on sets check failure; repository rules separately control merge gating.
-name: Sensitivity scan
+name: Sensitivity Smell
 on:
   pull_request:
   push:
@@ -26,7 +26,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Scan
         id: sensitive
-        uses: KingBain/sensitivity-scan@v1.0.0
+        uses: KingBain/sensitivity-smell@v1.1.0
         with:
           profile: code
           fail-on: NONE
@@ -34,7 +34,7 @@ jobs:
         if: ${{ always() && steps.sensitive.outputs.report-directory != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: sensitive-scan-results
+          name: sensitivity-smell-results
           path: ${{ steps.sensitive.outputs.report-directory }}
           retention-days: 7
           if-no-files-found: error
