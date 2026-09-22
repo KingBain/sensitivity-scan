@@ -1,5 +1,5 @@
 name: Generic Sensitive Information Scan
-description: Scan common field syntax in committed text and source code using modular YARA rules.
+description: Flag possible sensitive data in committed text and source code for human review using YARA patterns.
 author: Generic Sensitive Scan contributors
 branding:
   icon: shield
@@ -21,7 +21,7 @@ inputs:
     description: code (identifiers with names) or code-with-markings (also GC classification flags and NATO/UK markings).
     default: code
   fail-on:
-    description: NONE, LOW, MEDIUM, HIGH, or CRITICAL. NONE reports without blocking on findings.
+    description: NONE, LOW, MEDIUM, HIGH, or CRITICAL. NONE reports findings without failing the check; scan errors still fail.
     default: NONE
   fail-on-skips:
     description: Fail if any selected head or baseline file is skipped.
@@ -49,7 +49,7 @@ outputs:
     description: Absolute path to the directory containing all reports.
     value: ${{ steps.scan.outputs.report-directory }}
   exit-code:
-    description: '0: passed; 1: finding threshold reached; 2: scan or coverage failure.'
+    description: '0: no configured failure condition reached (findings may exist); 1: finding threshold reached; 2: scan or coverage failure.'
     value: ${{ steps.scan.outputs.exit-code }}
 runs:
   using: composite

@@ -1,14 +1,22 @@
-# Sensitivity Scan 🛡️
+# Sensitivity Scan
 
-A low-noise, context-aware GitHub Action that detects Canadian PII (SIN, PRI, DOB) in your codebase before it gets merged.
+Help people notice possible sensitive data, decide what to do next, and support
+their organization's security controls.
 
-The scanner uses YARA rules to look for **a labelled identifier with a full name, or both first and last names**. It recognizes common field syntax in any text file and uses visible containers and record boundaries to keep unrelated fields separate.
+Sensitivity Scan is a GitHub Action that uses YARA rules to flag a documented set
+of patterns in committed text and source code. Findings identify files and lines
+for human review. Reports omit matched values.
 
-Reports show the files and line numbers of the findings, but safely **omit the matched sensitive values**.
+Detection is best effort: false positives and missed sensitive data are expected.
+A finding does not establish sensitivity or classification, and zero findings
+does not establish that a repository is safe. The action runs after content has
+been committed and pushed to GitHub. It cannot prevent that initial exposure or
+remove existing copies. Its role is to add visibility to development and review
+workflows.
 
-## 🚀 Quick Start
+## Start with reporting
 
-Add this workflow to your repository at `.github/workflows/sensitivity-scan.yml`:
+Add `.github/workflows/sensitivity-scan.yml` to the repository you want to scan:
 
 ```yaml
 name: Sensitivity scan
@@ -27,122 +35,107 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0 # Required for PR diff scans
+          fetch-depth: 0
           persist-credentials: false
-          
-      - name: Scan sensitive information
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Review possible sensitive data
+        id: sensitive
         uses: KingBain/sensitivity-scan@v1.0.0
         with:
-          fail-on: NONE # Start in report-only mode
-```
-> **Tip:** Start with `fail-on: NONE` to review the job summary report without breaking your builds. Once your baseline is clean, change it to `HIGH` to block Pull Requests containing new SINs, or `MEDIUM` to block PRI/DOB findings.
-
-## 🧠 How it Works
-
-The Action automatically adapts its behavior based on how it is triggered (`mode: auto`):
-* **Pull Requests (Changes Mode):** Only scans for *newly introduced* sensitive data. It compares the PR head to the base branch so you don't fail builds for legacy data checked in years ago.
-* **Pushes & Manual Runs (Full Mode):** Scans the entire repository at the selected commit.
-
-### What does it look for?
-By default, the scanner requires an English or French label + a valid identifier format + the supporting name fields.
-
-| Combination | Severity |
-|---|---|
-| 🇨🇦 **SIN / NAS** + Name | `HIGH` |
-| 🏢 **PRI / CIDP** + Name | `MEDIUM` |
-| 🎂 **Date of Birth** + Name | `MEDIUM` |
-| 🛡️ **GC classification flags / NATO / UK markings** | *Optional* (See `profile` input) |
-
-### Fields inside any text or source file
-
-The extractor recognizes `key: value`, `key = value`, `key => value`, property
-assignments, XML tags and attributes. It does not select a parser by filename or
-require a complete JSON/YAML/XML document. The same field syntax can appear in
-source code, configuration, documentation, or a file without an extension:
-
-```xml
-<employee>
-  <firstname>John</firstname>
-  <lastname>Example</lastname>
-  <pri>12345678</pri>
-  <dob>1990-01-01</dob>
-</employee>
-```
-
-This produces PRI/name and DOB/name findings. A first name alone still does not
-qualify. Separate records are scanned independently, and reports retain the
-original file's line numbers.
-
-Extraction handles **any field using these patterns**, not a fixed list of personal-data
-keys. YARA rules decide what matches. Set `profile: code-with-markings` to enable
-boolean flags for **all GC sensitivity levels**, in English and French, alongside
-the NATO/UK markings. For example, `"PROTECTED A": true` produces a MEDIUM finding;
-`"PROTECTED B": true` produces a HIGH finding. Disabled (`false`), empty and null
-fields supply no evidence. Boolean flags do not substitute for real SIN/PRI/DOB
-or name values. The [field-syntax guide](docs/field-syntax.md) lists the
-flags, severities, record boundaries and supported patterns.
-
-Structured extraction was added after `v1.0.0`; use a release containing this
-change or a reviewed commit SHA to use it.
-
-## ⚙️ Key Configuration Inputs
-
-You can customize the Action using `with:`
-
-| Input | Default | Description |
-|---|---|---|
-| `fail-on` | `NONE` | Fails the job if findings meet this severity: `NONE`, `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` |
-| `profile` | `code` | Set to `code-with-markings` to include GC classification flags and NATO/UK markings. |
-| `exclusions` | `'[]'` | JSON array of glob patterns to ignore (e.g., test fixtures). See below. |
-
-**Example: Excluding test files**
-```yaml
+          fail-on: NONE
+      - name: Preserve reports
+        if: ${{ always() && steps.sensitive.outputs.report-directory != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          fail-on: HIGH
-          exclusions: >-
-            [{"glob":"testdata/synthetic/*","reason":"Reviewed synthetic test fixtures"}]
+          name: sensitivity-scan-results
+          path: ${{ steps.sensitive.outputs.report-directory }}
+          retention-days: 7
+          if-no-files-found: error
 ```
 
-## 📊 Outputs & Code Scanning
-The Action generates artifacts in the runner's temporary directory:
-* **Job Summary:** A Markdown summary is automatically attached to your GitHub Actions run.
-* **SARIF & JSON:** Generates `findings.sarif` and `findings.json`. You can easily upload the SARIF file to GitHub Advanced Security (Code Scanning) to see alerts directly in the PR changes tab. (See [SARIF Upload Example](examples/sarif-upload.md)).
+The example uses the published `v1.0.0` text-scanning release. Common field
+extraction and GC boolean flags were added after that release; select a release
+containing those changes, or a reviewed commit SHA, to use them. Pin production
+workflows to the full commit SHA you reviewed. This guide describes the current
+source; check the [release notes](https://github.com/KingBain/sensitivity-scan/releases)
+for the version you deploy.
 
----
+Read the job summary and the `findings.json` artifact, including coverage and
+skip reasons. With `fail-on: NONE`, findings do not fail the check; scan errors
+still do. Assign someone to review the reports. A green check alone is not a
+review decision.
 
-<details>
-<summary><b>🔍 Matching Behavior & Limitations</b></summary>
+## Coverage
 
-* **File Types:** Scans UTF-8/ASCII text in Git blobs. Files over 2 MiB, binaries, encoded/encrypted files, and Git LFS objects are skipped.
-* **Formatting:** Common field patterns are extracted from every text file, regardless of its extension. A full name requires at least two words. This is a lexical scanner, not a parser for every programming language.
-* **Record boundaries:** Visible containers, indented/list blocks and property paths separate evidence. Parent fields are not inherited by child records. Flat text without boundaries retains file-wide context. Unfamiliar syntax can be missed; resource-limit failures return exit `2`.
-* **Validation:** DOB accepts numeric dates from 1800–2099 but does not validate real calendar dates. SIN has no checksum validation.
-* **Context is Key:** A bare identifier without a supported name field will *not* produce a finding. This tool complements, rather than replaces, standard API key/secret scanners.
-</details>
+The default `code` profile looks for these English/French labelled combinations:
 
-<details>
-<summary><b>🛠️ Local Development & Custom Rules</b></summary>
+| Pattern in the same scan record | Finding severity | Candidate label |
+|---|---|---|
+| SIN / NAS + full name, or first and last names | HIGH | Protected B |
+| PRI / CIDP + full name, or first and last names | MEDIUM | Protected A |
+| DOB / DDN + full name, or first and last names | MEDIUM | Protected A |
 
-Want to run it locally or write custom YARA rules? You'll need Python 3.12 and Git.
+Numeric patterns check format. SIN checksums, real calendar dates, and a person's
+identity are not validated. A first name alone or an unlabelled identifier does
+not satisfy these combinations. Synthetic fixtures can match the same patterns
+as real information.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+The optional `code-with-markings` profile adds GC boolean classification flags
+and selected NATO/UK markings. These identify declarations for review; they do
+not independently determine the content's classification. Severities express
+this project's review priorities, not confidence scores or official classification
+equivalents.
 
-# Run a full scan locally
-python -I src/scan.py --repo /path/to/your/repo --mode full --output scan-results
-```
+The current extractor recognizes common field syntax in eligible UTF-8 text,
+regardless of filename: colon fields, assignments, object literals, property
+access, XML tags and attributes. Visible record boundaries limit combinations;
+flat text can retain file-wide context. Complex syntax, runtime values, encoded
+content, and unsupported labels can be missed. Binary documents are not decoded.
+See [field syntax and limits](docs/field-syntax.md).
 
-* **Custom Rules:** Want to scan for Credit Cards or custom company data? See [Create your own rules](docs/custom-rules.md).
-* **Testing:** See the [Examples folder](examples/README.md) for dummy workflows demonstrating passing and failing pipelines. 
-</details>
+## Scan modes and decisions
 
-<details>
-<summary><b>📦 Maintainers & Release Process</b></summary>
+| Event with `mode: auto` | Scan behavior |
+|---|---|
+| `pull_request` | Compare complete changed files at the PR head and merge base; report newly introduced matching evidence |
+| Push, schedule, manual run | Scan eligible tracked files at the selected head commit |
 
-* **Trust Model:** Scanned files are read strictly from Git objects, not executed or imported. External users should pin to a specific release tag (e.g., `v1.0.0`).
-* **Releases:** This project uses [Release Please](.github/workflows/release-please.yml) on pushes to `main`. Use Conventional Commits (`fix:`, `feat:`, etc.) to trigger automatic changelog generation and semantic version tagging.
-</details>
+Neither mode scans every historical commit. Working-tree edits and untracked files
+are outside scope. A PR report is a delta, so use full scans to review existing
+findings at a commit.
+
+Start with reporting, review representative findings and gaps, then choose any
+failure threshold. `fail-on: HIGH` fails the check for HIGH/CRITICAL findings;
+`MEDIUM` also includes MEDIUM findings. Merge gating additionally requires a
+repository rule that requires the check to pass. It does not stop the original
+commit or push.
+
+For a security control, document what is checked, who reviews results, what
+response is expected, and what evidence is retained. The scanner can support
+that process; enabling it alone does not establish that a control is satisfied.
+
+## Implementer guides
+
+- [Configure and operate the action](docs/implementation.md): inputs, outputs,
+  coverage, review decisions, exceptions, and security-control evidence.
+- [Understand field matching](docs/field-syntax.md): supported syntax, record
+  boundaries, classification flags, and known gaps.
+- [Create custom rules](docs/custom-rules.md): a credit-card candidate example,
+  reporting requirements, and integration through a reviewed fork.
+- [Exercise passing and failing pipelines](examples/README.md): synthetic
+  fixtures and expected exit codes.
+- [Upload SARIF](examples/sarif-upload.md): optional Code Scanning integration
+  for full-scan results.
+
+## Maintainers
+
+GitHub Actions runs the test suite, checks generated rules, and exercises the
+action on pull requests. Keep rule fixtures synthetic and describe known misses
+alongside expected matches. Tests establish behavior for those cases, not a
+general detection-accuracy percentage.
+
+Releases use [Release Please](.github/workflows/release-please.yml) on pushes to
+`main`. Conventional Commits feed a release PR with the changelog and version
+update; merging that PR lets Release Please publish the versioned release.
