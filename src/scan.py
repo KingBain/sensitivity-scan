@@ -104,6 +104,13 @@ def detect(rules, data, timeout=10):
             roles[string.identifier].extend(evidence(data, i) for i in string.instances)
         model = match.meta.get("evidence_model")
         if model == "identifier_and_name":
+            # Name regexes accept words, but boolean/null tokens are not names.
+            # Apply this to evidence roles, independent of each rule's aliases.
+            flag_value = re.compile(rb'''[:=][ \t]*["']?(true|false|null|none|nil)["']?[ \t]*$''', re.IGNORECASE)
+            for role in ("$full_name", "$first_name", "$last_name"):
+                roles[role] = [item for item in roles[role] if not flag_value.search(item["value"])]
+            if not roles["$full_name"] and not (roles["$first_name"] and roles["$last_name"]):
+                continue
             primary = roles["$identifier"]
         elif model == "marking":
             primary = roles["$marking"]
