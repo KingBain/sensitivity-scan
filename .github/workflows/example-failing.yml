@@ -1,5 +1,6 @@
 # This manual demo should finish red with one HIGH finding (exit code 1).
 # The fixture is synthetic, committed only in a temporary local repository.
+# The match demonstrates a review signal and threshold, not real PII or a leak.
 name: Example - failing scan
 
 on:

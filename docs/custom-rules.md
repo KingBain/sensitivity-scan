@@ -1,7 +1,14 @@
-# Create your own rules
+# Create rules for reviewable findings
 
-A rule describes what to look for, how to label the finding, and when it matches.
-Start with one narrow pattern and synthetic examples that should and should not match.
+A rule should identify a pattern that gives a reviewer a useful reason to inspect
+a file. Define the review question, the required evidence, and the known gaps
+before writing the expression. Use titles such as "Possible credit card number
+in a labelled field" that describe the evidence without asserting an exposure or
+an official classification.
+
+Start with one narrow pattern and synthetic examples that should and should not
+match. Document likely false positives, unsupported formats, and why a finding
+merits the chosen review priority. `HIGH` is a priority, not a confidence score.
 
 **Current limitation:** the action loads its bundled `code` or `code-with-markings`
 profile. It does not have a `rules-path` input and does not discover `.yar` files
@@ -48,7 +55,8 @@ rule example_credit_card_number : financial_information
 }
 ```
 
-- `meta` describes the finding. `HIGH` makes it block a scan using `fail-on: HIGH`.
+- `meta` describes the finding. `HIGH` makes the check fail with `fail-on: HIGH`;
+  `fail-on: NONE` still reports it without failing on the finding.
 - `strings` contains the pattern. `nocase` ignores label case. The boundaries
   avoid matching a 16-digit prefix of a longer value; `.` is not used as a wildcard separator.
 - `condition` decides when the rule reports. Here, finding `$marking` is enough;
@@ -60,7 +68,8 @@ The wrapper needs a little more than valid YARA syntax:
 |---|---|
 | Rule name | Unique YARA identifier, for example `example_credit_card_number` |
 | `title` | A readable description; do not put matched values in it |
-| `severity` | `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL` |
+| `severity` | `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL`; the project's review priority |
+| `assessment` | Use `"review_required"` to communicate the intended decision process |
 | `evidence_model` | `"marking"` with a matching string named `$marking` |
 | `condition` | Must require `$marking` so there is a location to report |
 
@@ -135,9 +144,20 @@ exercise both example rules through the adapter. See
 extraction was added after `v1.0.0`; consumers need a release containing it or a
 reviewed commit SHA.
 
-## Test it locally
+## Validate through a pull request
 
-From a clone of this repository, install the same runtime as the action:
+Add synthetic positive and negative cases with the rule change and open a PR.
+The `Test scanner` workflow runs the test suite, verifies generated rules, and
+exercises the action. Include cases for supported field syntax, expected misses,
+record boundaries, duplicate occurrences, source lines, and report redaction.
+A passing test establishes behavior for that case; it does not establish complete
+coverage or prove that matching values are real.
+
+For the card example, the intended reviewer question is whether the labelled
+number is real payment data, an approved test value, or an unrelated value. The
+public test number should match: recognizing its shape does not make it sensitive.
+
+Optional local checks use the same runtime as the action:
 
 ```bash
 python3 -m venv .venv
@@ -147,7 +167,7 @@ python3 -m venv .venv
 
 These tests cover positive/negative formats, the two fixture files, duplicate
 occurrences, report redaction, and the fork integration below. They also verify
-that a finding exits with code `1`, not a scanner error (`2`).
+that a threshold-reaching finding exits with code `1`, not a scanner error (`2`).
 
 If you already have the YARA CLI, you can try the rule directly:
 
@@ -174,11 +194,12 @@ contract. Avoid `yara -s`, which prints matched values.
    would overwrite it.
 4. Update the deliberate rule-count expectations in `tests/test_scan.py`:
    **27 → 28** core rules, **6 → 7** public rules, and **52 → 53** with markings.
-   Run `.venv/bin/python -m unittest discover -s tests -v` and commit the custom
-   rule, generator change, generated profile and updated tests together.
+   Commit the custom rule, generator change, generated profile and updated tests
+   together. Open a PR and use the `Test scanner` workflow to validate them.
 5. Publish a versioned release of your fork. In consumer workflows, replace
    `KingBain/sensitivity-scan@v1.0.0` with your fork and its actual release tag
-   (or full commit SHA). Keep `profile: code` and use `fail-on: HIGH` to block hits.
+   (or full commit SHA). Keep `profile: code` and start with `fail-on: NONE` to
+   review results. `fail-on: HIGH` optionally fails the check on matches.
 
 The upstream `v1.0.0` release will not acquire your fork's rule. The repository
 being scanned supplies data, not executable code or an automatically trusted
@@ -193,4 +214,7 @@ the sample file first**, then run:
 ```
 
 A bare `.yar` match is only the first test. Also check the report's line numbers,
-that matched values remain omitted, and that clean files still pass.
+that matched values remain omitted, and that negative fixtures have the expected
+result. Read [reviewing findings and exceptions](implementation.md#review-findings)
+for the operational process. Enabling a rule supports that process; it does not
+establish compliance with a security requirement.

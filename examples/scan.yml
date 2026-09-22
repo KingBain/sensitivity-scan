@@ -1,6 +1,9 @@
 # Copy to .github/workflows/sensitive-scan.yml in the repository to scan.
-# Replace v1.0.0 below with the immutable release tag you reviewed.
-# For production, pin the action to the full commit SHA of that release.
+# Start with reports and assign a reviewer; findings are possible sensitive data.
+# This published v1.0.0 example checks text patterns. For common field extraction
+# and GC boolean flags, select a release containing those later changes.
+# For production, pin the action to the full commit SHA you reviewed.
+# fail-on sets check failure; repository rules separately control merge gating.
 name: Sensitivity scan
 on:
   pull_request:

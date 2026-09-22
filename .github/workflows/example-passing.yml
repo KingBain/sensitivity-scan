@@ -1,5 +1,6 @@
 # This manual demo should finish green with zero findings.
 # The fixture is synthetic, committed only in a temporary local repository.
+# This is a known non-match, not evidence that arbitrary content is safe.
 name: Example - passing scan
 
 on:
@@ -36,7 +37,7 @@ jobs:
           mode: full
           fail-on: HIGH
 
-      - name: Verify the fixture is clean
+      - name: Verify the expected zero findings
         env:
           FINDINGS: ${{ steps.sensitive.outputs.findings-count }}
         run: test "$FINDINGS" = "0"

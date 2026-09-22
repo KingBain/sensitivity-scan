@@ -2,7 +2,14 @@
 
 Use [scan.yml](scan.yml) for a real repository. It runs on pull requests, pushes,
 a schedule and manual requests; the default `fail-on: NONE` reports findings
-without blocking. Change it to `HIGH` to block HIGH and CRITICAL findings.
+without failing the check on findings. Change it to `HIGH` to fail the check on
+HIGH and CRITICAL findings. Merge gating also requires repository rules that
+require the check to pass. Neither setting prevents the initial commit or push.
+
+These examples demonstrate configuration and known matching behavior. A passing
+fixture is an expected non-match, not proof that a repository is safe. A failing
+fixture is a review signal, not proof of real PII. Start with reports and assign
+someone to review them; see the [implementation guide](../docs/implementation.md).
 
 ## See a passing and a failing scan
 
@@ -31,20 +38,24 @@ use `scan.yml` instead of the temporary fixture setup.
 
 ## What green and red mean
 
-- Exit `0`: below the chosen threshold. With `fail-on: NONE`, this can still mean
-  findings exist; always read the report.
+- Exit `0`: no scan error or configured failure condition reached. With
+  `fail-on: NONE`, findings can still exist. Skipped files can also exist unless
+  `fail-on-skips: true`; read the report and coverage.
 - Exit `1`: findings meet or exceed the threshold. This is the intended result
   for the failing demo, not a scanner malfunction.
 - Exit `2`: scanning/coverage failure. This is **not** an acceptable substitute
   for the failing demo's detection result.
 
 The regular test workflow checks these same fixtures and exit codes automatically;
-its test passes when the expected blocked scan returns `1`.
+its test passes when the expected threshold failure returns `1`. These cases do
+not measure general detection accuracy.
 
 For a pull-request exercise in a sandbox, commit the passing fixture to `main`,
 then open a PR that replaces it with the failing fixture. Use the normal consumer
 workflow with `fail-on: HIGH`. Auto mode compares complete changed files against
-the merge base and blocks the newly introduced SIN/name combination.
+the merge base and fails the check for the newly introduced SIN/name combination.
+Repeat with `fail-on: NONE`: the same finding should appear while the scan step
+succeeds. That is the reporting-first behavior intended for initial adoption.
 
 ## Custom rules and reporting
 
@@ -66,7 +77,9 @@ named arguments and property access in files with arbitrary names.
 
 That directory also includes a `PROTECTED A` teaching rule and a JSON fixture
 with both `true` and `false`. Select `profile: code-with-markings` to use the
-built-in GC flags; only the `true` record matches. The profile covers every term
+built-in GC flags; only the `true` record matches. It reports an enabled
+declaration for review, without establishing the content's classification.
+The profile covers every term
 from the sensitivity grid in English and French. See
 [Field syntax](../docs/field-syntax.md) for the list and severities. These
 structured examples require a release newer than `v1.0.0` that includes the
