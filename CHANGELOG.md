@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/KingBain/sensitivity-smell/compare/v1.1.0...v1.1.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* adopt Sensitivity Smell across docs and integrations ([#7](https://github.com/KingBain/sensitivity-smell/issues/7)) ([2c31520](https://github.com/KingBain/sensitivity-smell/commit/2c315206af6c5b8bda6878f628d99e02d9130607))
+* rename project branding and integrations to Sensitivity Smell ([2c31520](https://github.com/KingBain/sensitivity-smell/commit/2c315206af6c5b8bda6878f628d99e02d9130607))
+
 ## [1.1.0](https://github.com/KingBain/sensitivity-smell/compare/v1.0.0...v1.1.0) (2026-09-22)
 
 
