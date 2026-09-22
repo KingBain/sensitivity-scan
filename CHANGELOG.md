@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/KingBain/sensitivity-scan/compare/v1.0.0...v1.1.0) (2026-09-22)
+
+
+### Features
+
+* recognize common field syntax in any text file and add classification flags ([d8b9bf3](https://github.com/KingBain/sensitivity-scan/commit/d8b9bf3f3686851d9d474a82ad00552e3c8888c0))
+* scan common field syntax and classification flags ([4005a1e](https://github.com/KingBain/sensitivity-scan/commit/4005a1e8cef14ba02d00d2c025eba1b6df820c35))
+* scan XML, JSON and YAML as independent records ([3544d16](https://github.com/KingBain/sensitivity-scan/commit/3544d16b7c8439cd8019adceda3a7760fd49a473))
+
+
+### Bug Fixes
+
+* exclude boolean tokens from supporting name evidence ([2e44e52](https://github.com/KingBain/sensitivity-scan/commit/2e44e5287e868b5a3218c041d3f69da347bdec9f))
+
 ## 1.0.0 (2026-09-18)
 
 
