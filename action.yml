@@ -1,5 +1,5 @@
 name: Generic Sensitive Information Scan
-description: Scan committed text for identifiers combined with names using modular YARA rules.
+description: Scan common field syntax in committed text and source code using modular YARA rules.
 author: Generic Sensitive Scan contributors
 branding:
   icon: shield
@@ -18,7 +18,7 @@ inputs:
     description: Head commit/ref; inferred for pull_request events, otherwise HEAD.
     default: ''
   profile:
-    description: code or code-with-markings.
+    description: code (identifiers with names) or code-with-markings (also GC classification flags and NATO/UK markings).
     default: code
   fail-on:
     description: NONE, LOW, MEDIUM, HIGH, or CRITICAL. NONE reports without blocking on findings.
@@ -30,7 +30,7 @@ inputs:
     description: Maximum size of each Git blob to scan.
     default: '2097152'
   timeout:
-    description: YARA timeout in seconds per file, on each revision.
+    description: Scan timeout in seconds per file, on each revision, shared across structured records.
     default: '10'
   exclusions:
     description: 'JSON array of exclusions, each with a glob and a reason.'

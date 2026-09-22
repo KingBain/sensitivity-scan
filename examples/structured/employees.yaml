@@ -1,0 +1,9 @@
+# Synthetic data; never use real personal information in examples.
+employees:
+  - first_name: Jane
+    last_name: Example
+    sin: 000-000-000
+  - firstname: John
+    lastname: Example
+    pri: "12345678"
+    dob: 1990-01-01

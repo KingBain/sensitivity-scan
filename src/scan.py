@@ -8,17 +8,24 @@ from dataclasses import dataclass
 import fnmatch
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 import uuid
 from urllib.parse import quote
 
 import yara
 
 ROOT = Path(__file__).resolve().parents[1]
+# -I omits the script directory. Add only the action's own trusted source path,
+# never the working directory of the repository being scanned.
+sys.path.insert(0, str(ROOT / "src"))
+import field_syntax
+
 VERSION = (ROOT / "version.txt").read_text(encoding="utf-8").strip()
 SEVERITIES = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 
@@ -97,6 +104,13 @@ def detect(rules, data, timeout=10):
             roles[string.identifier].extend(evidence(data, i) for i in string.instances)
         model = match.meta.get("evidence_model")
         if model == "identifier_and_name":
+            # Name regexes accept words, but boolean/null tokens are not names.
+            # Apply this to evidence roles, independent of each rule's aliases.
+            flag_value = re.compile(rb'''[:=][ \t]*["']?(true|false|null|none|nil)["']?[ \t]*$''', re.IGNORECASE)
+            for role in ("$full_name", "$first_name", "$last_name"):
+                roles[role] = [item for item in roles[role] if not flag_value.search(item["value"])]
+            if not roles["$full_name"] and not (roles["$first_name"] and roles["$last_name"]):
+                continue
             primary = roles["$identifier"]
         elif model == "marking":
             primary = roles["$marking"]
@@ -124,6 +138,37 @@ def detect(rules, data, timeout=10):
                 "_signature": (match.rule, item["value"], tuple(p["value"] for p in support)),
             })
     return results
+
+
+def detect_file(rules, data, path, timeout=10):
+    """Use the same rules on each record, restoring original source locations."""
+    deadline = time.monotonic() + timeout
+    try:
+        records = field_syntax.extract(data)
+        results = []
+        for record in records:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ScanError('Structured scan exceeded the per-file timeout.')
+            normalised, source_lines = field_syntax.normalise(record)
+            if not source_lines:
+                continue
+            for finding in detect(rules, normalised, max(1, math.ceil(remaining))):
+                finding['line'] = source_lines[finding['line'] - 1]
+                finding['evidence_lines'] = sorted({source_lines[n - 1] for n in finding['evidence_lines']})
+                results.append(finding)
+            if len(results) > 10000:
+                raise ScanError('More than 10,000 findings in a structured file.')
+        if time.monotonic() > deadline:
+            raise ScanError('Structured scan exceeded the per-file timeout.')
+        # detect() counts within one record. SARIF needs unique per-file ordinals.
+        counts = Counter()
+        for finding in sorted(results, key=lambda f: (f['line'], f['rule'])):
+            counts[finding['rule']] += 1
+            finding['ordinal'] = counts[finding['rule']]
+        return results
+    except field_syntax.StructureError as exc:
+        raise ScanError(f'Structured scan failed for {path}: {exc}') from exc
 
 
 def introduced(head, base):
@@ -238,12 +283,12 @@ def scan(options):
         data = load_blob(options.repo, path, blob, options, exclusions, coverage, "head")
         if data is None:
             continue
-        current = detect(rules, data, options.timeout)
+        current = detect_file(rules, data, path, options.timeout)
         previous = []
         if mode == "changes" and old:
             old_data = load_blob(options.repo, old_path, old, options, exclusions, coverage, "base")
             if old_data is not None:
-                previous = detect(rules, old_data, options.timeout)
+                previous = detect_file(rules, old_data, old_path, options.timeout)
         for finding in introduced(current, previous) if mode == "changes" else current:
             finding.pop("_signature")
             finding["path"] = path

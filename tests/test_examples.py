@@ -85,7 +85,7 @@ class CreditCardExampleTest(unittest.TestCase):
             self.assertEqual(generator.count(before) + generator.count(after), 1)
             (fork / 'tools/build_rules.py').write_text(generator.replace(before, after))
             subprocess.run([sys.executable, str(fork / 'tools/build_rules.py')], check=True)
-            for profile, count in [('code', 28), ('code-with-markings', 34)]:
+            for profile, count in [('code', 28), ('code-with-markings', 53)]:
                 rules = scan.yara.compile(filepath=str(fork / 'rules/profiles' / (profile + '.yar')))
                 self.assertEqual(len(list(rules)), count)
                 hits = scan.detect(rules, (CARD / 'failing.txt').read_bytes())

@@ -78,6 +78,63 @@ formats. A 16-digit order number in a card-labelled field can still match. Treat
 the result as a candidate for review, not proof of a real card or a classification.
 The example is **not enabled in the default profiles**.
 
+## Use the same rule across field syntax
+
+The action recognizes common field patterns in any text file and runs YARA once
+per extracted record. Filenames and extensions do not select a parser. The
+credit-card rule above can therefore also match these inputs:
+
+```xml
+<payment><credit_card>4242424242424242</credit_card></payment>
+```
+
+```json
+{"credit_card": "4242424242424242"}
+```
+
+```yaml
+credit_card: "4242424242424242"
+```
+
+```javascript
+const payment = { credit_card: "4242424242424242" };
+```
+
+Assignments such as `payment.credit_card = "4242424242424242"` use the same
+extraction. No rule changes or file-extension registration are needed.
+
+Each record is presented to YARA as one quoted key/value pair per line:
+
+```text
+"credit_card": "4242424242424242"
+```
+
+Literal values become strings, including numbers and booleans. Aliases such as
+`card_number` belong in your YARA rule. XML namespaces and property access prefixes
+are removed from field names; property prefixes separate records. Reports map
+findings to the original value's start line. Unstructured text remains available
+for text patterns. Normalized text is not written to reports.
+
+Disabled (`false`), null and empty fields are omitted from positive evidence,
+so a classification label in a disabled flag's key cannot trigger a finding.
+This applies to custom rules as well as bundled rules.
+
+For a different kind of field, see the teaching
+[Protected A flag rule](../examples/structured/protected-a.yar). It requires the
+normalized field `"PROTECTED A": "true"` (also accepting `PROTECTED_A` or
+`PROTECTED-A`) and leaves `false`, `null`, and schema declarations unmatched.
+Both boolean `true` and string `"true"` match because normalization is textual.
+The bundled `code-with-markings` profile already includes all GC sensitivity
+flags in English and French; select that profile to use them. The separate
+teaching rule isolates one flag for learning and does not need to be added again.
+
+The adapter is part of this action, not the YARA CLI. Running `yara` directly on
+an XML file does not perform extraction. The CI cases in `tests/test_structured.py`
+exercise both example rules through the adapter. See
+[Field syntax](field-syntax.md) for boundaries and limitations. Structured
+extraction was added after `v1.0.0`; consumers need a release containing it or a
+reviewed commit SHA.
+
 ## Test it locally
 
 From a clone of this repository, install the same runtime as the action:
@@ -116,7 +173,7 @@ contract. Avoid `yara -s`, which prints matched values.
    gains the rule too. Do not only edit the generated profile: the next generation
    would overwrite it.
 4. Update the deliberate rule-count expectations in `tests/test_scan.py`:
-   **27 → 28** core rules, **6 → 7** public rules, and **33 → 34** with markings.
+   **27 → 28** core rules, **6 → 7** public rules, and **52 → 53** with markings.
    Run `.venv/bin/python -m unittest discover -s tests -v` and commit the custom
    rule, generator change, generated profile and updated tests together.
 5. Publish a versioned release of your fork. In consumer workflows, replace

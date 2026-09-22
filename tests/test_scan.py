@@ -27,7 +27,7 @@ class RulesTest(unittest.TestCase):
         core = list(self.rules)
         self.assertEqual(len(core), 27)
         self.assertEqual(sum(not r.is_private for r in core), 6)
-        self.assertEqual(len(list(scan.compile_profile("code-with-markings"))), 33)
+        self.assertEqual(len(list(scan.compile_profile("code-with-markings"))), 52)
 
     def test_six_combinations(self):
         for lang, name in [("en", 'Full Name: Jane Example'), ("fr", 'Nom: Élodie Exemple')]:

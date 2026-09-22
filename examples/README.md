@@ -53,3 +53,22 @@ The pipeline demos use the bundled SIN/name rule. The separate
 not part of the published default profile. Follow [Create your own rules](../docs/custom-rules.md)
 to test it and integrate it into a fork. For optional GitHub Code Scanning upload,
 see [sarif-upload.md](sarif-upload.md).
+
+## Common field patterns
+
+The [structured examples](structured) contain the same synthetic employees in
+XML, JSON and YAML. Each should produce three findings with the new adapter:
+SIN/name (HIGH), PRI/name (MEDIUM), and DOB/name (MEDIUM). The test workflow checks
+these fixtures through the scanner and checks their original line numbers.
+The extractor uses field syntax rather than file extensions; the same patterns
+are supported inside source files. Tests also cover object literals, assignments,
+named arguments and property access in files with arbitrary names.
+
+That directory also includes a `PROTECTED A` teaching rule and a JSON fixture
+with both `true` and `false`. Select `profile: code-with-markings` to use the
+built-in GC flags; only the `true` record matches. The profile covers every term
+from the sensitivity grid in English and French. See
+[Field syntax](../docs/field-syntax.md) for the list and severities. These
+structured examples require a release newer than `v1.0.0` that includes the
+adapter, or a reviewed commit SHA; the manual pipeline demos above still exercise
+the published text-scanning release.
