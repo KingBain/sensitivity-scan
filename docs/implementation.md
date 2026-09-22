@@ -1,6 +1,6 @@
 # Configure and operate the action
 
-Use Sensitivity Scan to identify possible sensitive data for review and support
+Use Sensitivity Smell to identify possible sensitive data for review and support
 your organization's security controls. An implementation includes a scan scope,
 a reviewer, a response process, and retained evidence. The scan provides findings;
 the team makes the handling decision.
@@ -23,9 +23,35 @@ the scanned files. Changes to the scanned repository's `.yar` files do not
 automatically change the active rules. The action installs its pinned runtime
 dependency on the runner and needs package-download access.
 
-Common field extraction and GC boolean flags were added after `v1.0.0`.
-Consumers need a release containing those changes or a reviewed commit SHA.
-The published-release examples remain usable for the original text patterns.
+The examples use `v1.1.0`, which includes common field extraction and GC boolean
+flags. Renamed report identifiers require a release containing the rename or a
+reviewed commit after `v1.1.0`.
+
+## Upgrading existing integrations
+
+Use `KingBain/sensitivity-smell@<reviewed-ref>` in consumer workflows and update
+links to the renamed repository. Published tags retain their original code; a
+new repository path does not change a pinned release's behavior or report names.
+
+The rename changes these identifiers in current source:
+
+| Surface | Previous value | New value |
+|---|---|---|
+| JSON `tool` and SARIF `tool.driver.name` | `generic-sensitive-scan` | `sensitivity-smell` |
+| SARIF `automationDetails.id` prefix | `generic-sensitive-scan/` | `sensitivity-smell/` |
+| Example SARIF upload category | `generic-sensitive-scan` | `sensitivity-smell` |
+
+Update downstream filters that inspect these values. The JSON structure, action
+inputs/outputs, CLI arguments, report filenames, and YARA rule IDs are unchanged.
+For existing Code Scanning uploads, see the
+[SARIF migration note](../examples/sarif-upload.md#upgrading-from-the-previous-name)
+before switching report identities.
+
+Consumer workflow names, filenames and artifact names are examples; renaming
+them is optional. If you rename a required check, update the corresponding
+repository rule. Release automation continues to use the existing
+`SENS_RELEASE_APP_CLIENT_ID` variable and `SENS_RELEASE_APP_PRIVATE_KEY` secret;
+the repository name is obtained from the event.
 
 ## Inputs
 

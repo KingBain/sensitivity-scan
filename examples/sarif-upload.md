@@ -30,7 +30,7 @@ Then append this step after the scan and artifact steps:
   uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
   with:
     sarif_file: ${{ steps.sensitive.outputs.sarif }}
-    category: generic-sensitive-scan
+    category: sensitivity-smell
 ```
 
 This example assumes the checkout is the same commit as the full scan's `head`
@@ -54,3 +54,17 @@ Zero alerts can also reflect limited coverage or unavailable results; inspect
 the scan run before treating it as evidence of a completed check.
 
 For retention and control evidence, see the [implementation guide](../docs/implementation.md#support-a-security-control).
+
+## Upgrading from the previous name
+
+The renamed scanner emits `sensitivity-smell` as its SARIF tool name and uses
+`sensitivity-smell/<profile>/` as its analysis ID. The example upload category
+above also uses the new name. Releases through `v1.1.0` still emit
+`generic-sensitive-scan`, even when invoked through the new repository path.
+
+GitHub distinguishes analyses by tool and category. Expect the new identifiers
+to create a separate analysis identity; do not assume existing alerts or
+dismissals will carry over. Review the first full upload and reconcile the old
+analysis through your normal Code Scanning process. The rename does not resolve
+the underlying findings. See
+[GitHub's analysis category documentation](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/integrate-with-existing-tools/upload-sarif-file#uploading-more-than-one-sarif-file-for-a-commit).

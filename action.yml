@@ -1,6 +1,6 @@
-name: Generic Sensitive Information Scan
+name: Sensitivity Smell
 description: Flag possible sensitive data in committed text and source code for human review using YARA patterns.
-author: Generic Sensitive Scan contributors
+author: Sensitivity Smell contributors
 branding:
   icon: shield
   color: blue
@@ -68,7 +68,7 @@ runs:
           echo 'This action supports Linux runners.' >&2
           exit 2
         fi
-        SCAN_VENV="$(mktemp -d "$RUNNER_TEMP/sensitive-scan-venv.XXXXXX")"
+        SCAN_VENV="$(mktemp -d "$RUNNER_TEMP/sensitivity-smell-venv.XXXXXX")"
         python -I -m venv "$SCAN_VENV"
         "$SCAN_VENV/bin/python" -I -m pip --isolated install --disable-pip-version-check --only-binary=:all: -r "$ACTION_ROOT/requirements.txt"
         echo "python=$SCAN_VENV/bin/python" >> "$GITHUB_OUTPUT"
@@ -89,7 +89,7 @@ runs:
         SCAN_TIMEOUT: ${{ inputs.timeout }}
         SCAN_EXCLUSIONS: ${{ inputs.exclusions }}
       run: |
-        REPORT_DIR="$(mktemp -d "$RUNNER_TEMP/sensitive-scan-report.XXXXXX")"
+        REPORT_DIR="$(mktemp -d "$RUNNER_TEMP/sensitivity-smell-report.XXXXXX")"
         args=(--repo "$SCAN_REPO" --mode "$SCAN_MODE" --base "$SCAN_BASE" --head "$SCAN_HEAD"
           --profile "$SCAN_PROFILE" --fail-on "$SCAN_FAIL_ON" --max-file-bytes "$SCAN_MAX_FILE_BYTES"
           --timeout "$SCAN_TIMEOUT" --exclusions "$SCAN_EXCLUSIONS" --output "$REPORT_DIR")

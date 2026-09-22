@@ -6,8 +6,8 @@ file, with no extension list or language selection. A recognized field in source
 code receives the same handling as one in configuration or documentation.
 This does not imply complete support for those languages or data formats.
 
-This extraction was added after `v1.0.0`; use a release containing it or a reviewed
-commit SHA. Existing Git-blob size, encoding and exclusion settings still apply.
+This extraction is available in `v1.1.0` and later. Existing Git-blob size,
+encoding and exclusion settings still apply.
 
 ## Bundled patterns
 
